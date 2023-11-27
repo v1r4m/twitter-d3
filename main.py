@@ -54,7 +54,7 @@ while True:
         queryId, bearer = fetchQueryIdBearer(link)
         url = 'https://api.twitter.com/graphql/'+queryId+'/UserByScreenName?variables=%7B%22screen_name%22%3A%22'+id+'%22%2C%22withSafetyModeUserFields%22%3Atrue%7D&features=%7B%22hidden_profile_likes_enabled%22%3Atrue%2C%22hidden_profile_subscriptions_enabled%22%3Atrue%2C%22responsive_web_graphql_exclude_directive_enabled%22%3Atrue%2C%22verified_phone_label_enabled%22%3Afalse%2C%22subscriptions_verification_info_is_identity_verified_enabled%22%3Atrue%2C%22subscriptions_verification_info_verified_since_enabled%22%3Atrue%2C%22highlights_tweets_tab_ui_enabled%22%3Atrue%2C%22creator_subscriptions_tweet_preview_api_enabled%22%3Atrue%2C%22responsive_web_graphql_skip_user_profile_image_extensions_enabled%22%3Afalse%2C%22responsive_web_graphql_timeline_navigation_enabled%22%3Atrue%7D&fieldToggles=%7B%22withAuxiliaryUserLabels%22%3Afalse%7D'
         headers = {
-            'X-Guests-Token':config['token']['guest'],
+            'X-Guest-Token':config['token']['guest'],
             'Authorization':"Bearer "+bearer
         }
         response = requests.get(url,headers=headers)
@@ -63,10 +63,13 @@ while True:
             print(data)
             time.sleep(10)
         else:
-            print(response)
+            print(response.text)
             time.sleep(10)
     except:
         print('exception')
         time.sleep(10)
-#if, else, try 분기처리 제대로 정리할것
-
+# your bearer token never expires, but has very low rate limit.
+# so you have to set X-Guest-Token, to let twitter know that you are not logged in, and not affected by rate limit. (maybe?)
+# Unfortunately, X-Guest-Token is not hard-coded, so you have to catch valid guest token on twitter
+# how? it is written on js code -> .withEndpoint(lt.Z).requestGuestToken()['catch']
+# how do we implement this? let me think about it...
