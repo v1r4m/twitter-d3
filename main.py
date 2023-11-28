@@ -48,13 +48,27 @@ def fetchQueryIdBearer(link):
         else:
             print("couldn't fetch queryId")
 
+def fetchGuest(id):
+    url = 'https://twitter.com/'+id
+    response = requests.get(url)
+    if response.status_code == 200:
+        js_content=response.text
+        pattern = r'document\.cookie="gt=(\d+);'
+        match = re.search(pattern,js_content)
+        if match:
+            guest = match.group(1)
+            return guest
+        else:
+            print("couldn't fetch guest")
+
 while True:
     try:
         link = fetchMainJs()
         queryId, bearer = fetchQueryIdBearer(link)
+        guest = fetchGuest(id) #뭔가 이렇게 세번부르는게 최선인가? 최적화할수있을거같은데 잘뒤지면
         url = 'https://api.twitter.com/graphql/'+queryId+'/UserByScreenName?variables=%7B%22screen_name%22%3A%22'+id+'%22%2C%22withSafetyModeUserFields%22%3Atrue%7D&features=%7B%22hidden_profile_likes_enabled%22%3Atrue%2C%22hidden_profile_subscriptions_enabled%22%3Atrue%2C%22responsive_web_graphql_exclude_directive_enabled%22%3Atrue%2C%22verified_phone_label_enabled%22%3Afalse%2C%22subscriptions_verification_info_is_identity_verified_enabled%22%3Atrue%2C%22subscriptions_verification_info_verified_since_enabled%22%3Atrue%2C%22highlights_tweets_tab_ui_enabled%22%3Atrue%2C%22creator_subscriptions_tweet_preview_api_enabled%22%3Atrue%2C%22responsive_web_graphql_skip_user_profile_image_extensions_enabled%22%3Afalse%2C%22responsive_web_graphql_timeline_navigation_enabled%22%3Atrue%7D&fieldToggles=%7B%22withAuxiliaryUserLabels%22%3Afalse%7D'
         headers = {
-            'X-Guest-Token':config['token']['guest'],
+            'X-Guest-Token':guest,
             'Authorization':"Bearer "+bearer
         }
         response = requests.get(url,headers=headers)
