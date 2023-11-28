@@ -73,3 +73,6 @@ while True:
 # Unfortunately, X-Guest-Token is not hard-coded, so you have to catch valid guest token on twitter
 # how? it is written on js code -> .withEndpoint(lt.Z).requestGuestToken()['catch']
 # how do we implement this? let me think about it...
+
+# html에서 document.cookie = "gt=17294.... 에도 있고, 리퀘스트를 두번보냈을때 쿠키를 뒤져도 나온다!
+# Max-Age=9000 이니까 고려해서 보낼것
