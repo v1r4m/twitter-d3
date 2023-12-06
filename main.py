@@ -37,17 +37,18 @@ def fetchQueryIdBearer(link):
         f = open('a.txt','w')
         f.write(js_content)
         f.close()
-        pattern = r'queryId:"([A-Za-z0-9-]+)",operationName:"UserByScreenName"'
+        pattern = r'queryId:"([A-Za-z0-9-]+)",operationName:"UserByScreenName",operationType:"query",metadata:{featureSwitches:(\[.*?\])'
         pattern2 = r'{return"Bearer ([A-Za-z0-9\-!@#$%^&*()]+)";}'
         match = re.search(pattern, js_content)
         match2 = re.search(pattern2, js_content)
         if match:
             queryId = match.group(1)
+            featureSwitches = match.group(2)
             print(queryId)
             if match2:
                 bearer = match2.group(1)
                 print(bearer)
-                return queryId, bearer
+                return queryId, bearer, featureSwitches
             else:
                 print("couldn't fetch bearer")
         else:
@@ -70,9 +71,26 @@ def fetchGuest(id):
 while True:
     try:
         link = fetchMainJs()
-        queryId, bearer = fetchQueryIdBearer(link)
+        queryId, bearer, featureSwitches = fetchQueryIdBearer(link)
         guest = fetchGuest(id) #뭔가 이렇게 세번부르는게 최선인가? 최적화할수있을거같은데 잘뒤지면
         base_url = 'https://api.twitter.com/graphql/' + queryId + '/UserByScreenName'
+        print(featureSwitches)
+
+        #metadata:{
+        # featureSwitches:[
+        # "hidden_profile_likes_enabled",
+        # "hidden_profile_subscriptions_enabled",
+        # "responsive_web_graphql_exclude_directive_enabled",
+        # "verified_phone_label_enabled",
+        # "subscriptions_verification_info_is_identity_verified_enabled",
+        # "subscriptions_verification_info_verified_since_enabled",
+        # "highlights_tweets_tab_ui_enabled",
+        # "responsive_web_twitter_article_notes_tab_enabled",
+        # "creator_subscriptions_tweet_preview_api_enabled",
+        # "responsive_web_graphql_skip_user_profile_image_extensions_enabled",
+        # "responsive_web_graphql_timeline_navigation_enabled"],
+        # 
+        # fieldToggles:["withAuxiliaryUserLabels"]}}
         variables = {
             "screen_name": id,
             "withSafetyModeUserFields": True
