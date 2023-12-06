@@ -1,6 +1,8 @@
 from configparser import ConfigParser
 import time
+import json
 config = ConfigParser()
+#todo: args로 받아오게 만들기
 config.read('conf.ini')
 
 
@@ -32,6 +34,9 @@ def fetchQueryIdBearer(link):
     response = requests.get(url)
     if response.status_code==200:
         js_content = response.text
+        f = open('a.txt','w')
+        f.write(js_content)
+        f.close()
         pattern = r'queryId:"([A-Za-z0-9-]+)",operationName:"UserByScreenName"'
         pattern2 = r'{return"Bearer ([A-Za-z0-9\-!@#$%^&*()]+)";}'
         match = re.search(pattern, js_content)
@@ -57,6 +62,7 @@ def fetchGuest(id):
         match = re.search(pattern,js_content)
         if match:
             guest = match.group(1)
+            print(guest)
             return guest
         else:
             print("couldn't fetch guest")
@@ -66,12 +72,40 @@ while True:
         link = fetchMainJs()
         queryId, bearer = fetchQueryIdBearer(link)
         guest = fetchGuest(id) #뭔가 이렇게 세번부르는게 최선인가? 최적화할수있을거같은데 잘뒤지면
-        url = 'https://api.twitter.com/graphql/'+queryId+'/UserByScreenName?variables=%7B%22screen_name%22%3A%22'+id+'%22%2C%22withSafetyModeUserFields%22%3Atrue%7D&features=%7B%22hidden_profile_likes_enabled%22%3Atrue%2C%22hidden_profile_subscriptions_enabled%22%3Atrue%2C%22responsive_web_graphql_exclude_directive_enabled%22%3Atrue%2C%22verified_phone_label_enabled%22%3Afalse%2C%22subscriptions_verification_info_is_identity_verified_enabled%22%3Atrue%2C%22subscriptions_verification_info_verified_since_enabled%22%3Atrue%2C%22highlights_tweets_tab_ui_enabled%22%3Atrue%2C%22creator_subscriptions_tweet_preview_api_enabled%22%3Atrue%2C%22responsive_web_graphql_skip_user_profile_image_extensions_enabled%22%3Afalse%2C%22responsive_web_graphql_timeline_navigation_enabled%22%3Atrue%7D&fieldToggles=%7B%22withAuxiliaryUserLabels%22%3Afalse%7D'
+        base_url = 'https://api.twitter.com/graphql/' + queryId + '/UserByScreenName'
+        variables = {
+            "screen_name": id,
+            "withSafetyModeUserFields": True
+        }
+        features = {
+            "hidden_profile_likes_enabled": True,
+            "hidden_profile_subscriptions_enabled": True,
+            "responsive_web_graphql_exclude_directive_enabled": True,
+            "verified_phone_label_enabled": False,
+            "subscriptions_verification_info_is_identity_verified_enabled": True,
+            "subscriptions_verification_info_verified_since_enabled": True,
+            "highlights_tweets_tab_ui_enabled": True,
+            "responsive_web_twitter_article_notes_tab_enabled": False,
+            "creator_subscriptions_tweet_preview_api_enabled": True,
+            "responsive_web_graphql_skip_user_profile_image_extensions_enabled": False,
+            "responsive_web_graphql_timeline_navigation_enabled": True
+        } #이게 자주 바뀌는 것 같다
+        field_toggles = {
+            "withAuxiliaryUserLabels": False
+        }
+
+        #variables, featrues, fieldToggles 동적으로 가져와야 함!! 
+
+        payload = {
+            "variables": json.dumps(variables),
+            "features": json.dumps(features),
+            "fieldToggles": json.dumps(field_toggles)
+        }
         headers = {
             'X-Guest-Token':guest,
             'Authorization':"Bearer "+bearer
         }
-        response = requests.get(url,headers=headers)
+        response = requests.get(base_url,params=payload,headers=headers)
         if response.status_code == '200':
             data = response.json()
             print(data)
@@ -79,8 +113,8 @@ while True:
         else:
             print(response.text)
             time.sleep(10)
-    except:
-        print('exception')
+    except Exception as e:
+        print('exception'+str(e))
         time.sleep(10)
 # your bearer token never expires, but has very low rate limit.
 # so you have to set X-Guest-Token, to let twitter know that you are not logged in, and not affected by rate limit. (maybe?)
