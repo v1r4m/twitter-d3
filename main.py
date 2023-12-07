@@ -68,13 +68,13 @@ def fetchGuest(id):
         else:
             print("couldn't fetch guest")
 
-while True:
+def finalApi():
     try:
         link = fetchMainJs()
         queryId, bearer, featureSwitches = fetchQueryIdBearer(link)
         guest = fetchGuest(id) #뭔가 이렇게 세번부르는게 최선인가? 최적화할수있을거같은데 잘뒤지면
         base_url = 'https://api.twitter.com/graphql/' + queryId + '/UserByScreenName'
-        print(featureSwitches)
+        #true/false 가져오는 방법을 모르겠어서 일단은 featureSwitches는 이대로...
 
         #metadata:{
         # featureSwitches:[
@@ -112,7 +112,8 @@ while True:
             "withAuxiliaryUserLabels": False
         }
 
-        #variables, featrues, fieldToggles 동적으로 가져와야 함!! 
+        #variables, featrues, fieldToggles 동적으로 가져와야 할수도 있음
+        # (t/f어디서 가져오는지 생각해보기, 혹시 all true로 보내도 정상출력되는지 테스트해보기)
 
         payload = {
             "variables": json.dumps(variables),
@@ -124,16 +125,45 @@ while True:
             'Authorization':"Bearer "+bearer
         }
         response = requests.get(base_url,params=payload,headers=headers)
-        if response.status_code == '200':
+        return response
+    except Exception as e:
+        print('exception'+str(e))
+        return
+
+response = finalApi()
+data = response.json()
+prevTweet = data['data']['user']['result']['legacy']['statuses_count']
+prevMedia = data['data']['user']['result']['legacy']['media_count']
+prevFav = data['data']['user']['result']['legacy']['favourites_count']
+time.sleep(10) # 테스트용, 늘려야함
+while True:
+    try:
+        response = finalApi()
+        if response.status_code == 200: #'200'으로 하면 안됨 ㅡㅡ 
             data = response.json()
-            print(data)
-            time.sleep(10)
+            totalTweet = data['data']['user']['result']['legacy']['statuses_count']
+            #TODO: RT한 트윗이 계폭하거나, 삭제되면 트윗수가 어떻게 변하는지 실험해봐야됨
+            #만약 변화가 있다면 (-)마이너스 변화는 무시하고 (+)플러스 변화만 로깅해야함
+            totalMedia = data['data']['user']['result']['legacy']['media_count']
+            totalFav = data['data']['user']['result']['legacy']['favourites_count']
+            print(totalTweet,totalMedia,totalFav) #트윗,미디어,하트
+            upTweet = totalTweet-prevTweet
+            upMedia = totalMedia-prevMedia
+            upFav = totalFav-prevFav
+            #변화량을 3가지 그래프 축으로 그려야됨
+            #Tweet과 Media는 같이올라가는걸 고려해야함!! 
+            #그렸다치고
+            prevTweet = totalTweet
+            prevMedia = totalMedia
+            prevFav = totalFav
+            time.sleep(10) #테스트용, 늘려야함
         else:
             print(response.text)
             time.sleep(10)
     except Exception as e:
         print('exception'+str(e))
         time.sleep(10)
+
 # your bearer token never expires, but has very low rate limit.
 # so you have to set X-Guest-Token, to let twitter know that you are not logged in, and not affected by rate limit. (maybe?)
 # Unfortunately, X-Guest-Token is not hard-coded, so you have to catch valid guest token on twitter
