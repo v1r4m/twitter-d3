@@ -150,9 +150,9 @@ class Twitter:
                     upMedia = totalMedia-prevMedia
                     upFav = totalFav-prevFav
                     print()
-                    print('Total Tweet : '+str(totalTweet)+'(+'+str(upTweet)+' in last '+str(interval)+'s')
-                    print('Total Media : '+str(totalMedia)+'(+'+str(upMedia)+' in last '+str(interval)+'s')
-                    print('Total Fav(Likes) : ', str(totalFav)+'(+'+str(upFav)+' in last '+str(interval)+'s')
+                    print('Total Tweet : '+str(totalTweet)+' (+'+str(upTweet)+' in last '+str(interval)+'s)')
+                    print('Total Media : '+str(totalMedia)+' (+'+str(upMedia)+' in last '+str(interval)+'s)')
+                    print('Total Fav(Likes) : ', str(totalFav)+' (+'+str(upFav)+' in last '+str(interval)+'s)')
                     #변화량을 3가지 그래프 축으로 그려야됨
                     #Tweet과 Media는 같이올라가는걸 고려해야함!! 
                     #그렸다치고
