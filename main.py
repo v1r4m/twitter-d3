@@ -7,11 +7,14 @@ class Twitter:
 # fetch main.js
 # if null is returned, raise exception on main loop 
     def fetchMainJs(self,id):
-        url = 'https://twitter.com/'+id+'/main.js' 
-        response = requests.get(url)
+        url = 'https://twitter.com/'+id
+        headers ={
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36'
+        }
+        response = requests.get(url, headers=headers)
         if response.status_code == 200:
             js_content = response.text
-            pattern = r'src="(https://abs.twimg.com/responsive-web/client-web-legacy/main.[^"]+)"'
+            pattern = r'src="(https://abs.twimg.com/responsive-web/client-web/main.[^"]+)"'
             match = re.search(pattern, js_content)
             if match:
                 link = match.group(1)
@@ -65,6 +68,7 @@ class Twitter:
     def finalApi(self,id):
         try:
             link = self.fetchMainJs(id)
+            print(link)
             queryId, bearer, featureSwitches = self.fetchQueryIdBearer(link)
             guest = self.fetchGuest(id) #뭔가 이렇게 세번부르는게 최선인가? 최적화할수있을거같은데 잘뒤지면
             base_url = 'https://api.twitter.com/graphql/' + queryId + '/UserByScreenName'
