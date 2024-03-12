@@ -31,17 +31,14 @@ class Twitter:
         response = requests.get(url)
         if response.status_code==200:
             js_content = response.text
-            f = open('a.txt','w')
-            f.write(js_content)
-            f.close()
             pattern = r'queryId:"([A-Za-z0-9-]+)",operationName:"UserByScreenName",operationType:"query",metadata:{featureSwitches:(\[.*?\])'
-            pattern2 = r'{return"Bearer ([A-Za-z0-9\-!@#$%^&*()]+)";}'
+            pattern2 = r'"Bearer ([A-Za-z0-9\-!@#$%^&*()]+)"'
             match = re.search(pattern, js_content)
             match2 = re.search(pattern2, js_content)
             if match:
                 queryId = match.group(1)
                 featureSwitches = match.group(2)
-                #print(queryId)
+#                print(queryId)
                 if match2:
                     bearer = match2.group(1)
                     #print(bearer)
@@ -53,9 +50,15 @@ class Twitter:
 
     def fetchGuest(self,id):
         url = 'https://twitter.com/'+id
-        response = requests.get(url)
+        headers ={
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36'
+        }
+        response = requests.get(url, headers=headers)
         if response.status_code == 200:
             js_content=response.text
+            f = open('a.txt','w')
+            f.write(js_content)
+            f.close()
             pattern = r'document\.cookie="gt=(\d+);'
             match = re.search(pattern,js_content)
             if match:
