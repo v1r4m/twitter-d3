@@ -2,3 +2,4 @@ conf.ini
 test.py
 a.txt
 sample.json
+__pycache__/

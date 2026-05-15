@@ -2,6 +2,12 @@ import time
 import json
 import requests, re
 import argparse
+import subprocess
+
+
+def notify(title, message):
+    script = f'display notification "{message}" with title "{title}" sound name "Glass"'
+    subprocess.run(['osascript', '-e', script], check=False)
 
 class Twitter:
 # fetch main.js
@@ -31,18 +37,17 @@ class Twitter:
         response = requests.get(url)
         if response.status_code==200:
             js_content = response.text
-            pattern = r'queryId:"([A-Za-z0-9-]+)",operationName:"UserByScreenName",operationType:"query",metadata:{featureSwitches:(\[.*?\])'
+            pattern = r'queryId:"([A-Za-z0-9-]+)",operationName:"UserByScreenName",operationType:"query",metadata:\{featureSwitches:(\[.*?\]),fieldToggles:(\[.*?\])\}'
             pattern2 = r'"Bearer ([A-Za-z0-9\-!@#$%^&*()]+)"'
             match = re.search(pattern, js_content)
             match2 = re.search(pattern2, js_content)
             if match:
                 queryId = match.group(1)
-                featureSwitches = match.group(2)
-#                print(queryId)
+                featureSwitches = json.loads(match.group(2))
+                fieldToggles = json.loads(match.group(3))
                 if match2:
                     bearer = match2.group(1)
-                    #print(bearer)
-                    return queryId, bearer, featureSwitches
+                    return queryId, bearer, featureSwitches, fieldToggles
                 else:
                     print("couldn't fetch bearer")
             else:
@@ -72,58 +77,27 @@ class Twitter:
         try:
             link = self.fetchMainJs(id)
             print(link)
-            queryId, bearer, featureSwitches = self.fetchQueryIdBearer(link)
-            guest = self.fetchGuest(id) #뭔가 이렇게 세번부르는게 최선인가? 최적화할수있을거같은데 잘뒤지면
+            queryId, bearer, featureSwitches, fieldToggles = self.fetchQueryIdBearer(link)
+            guest = self.fetchGuest(id)
             base_url = 'https://api.twitter.com/graphql/' + queryId + '/UserByScreenName'
-            #true/false 가져오는 방법을 모르겠어서 일단은 featureSwitches는 이대로...
-
-            #metadata:{
-            # featureSwitches:[
-            # "hidden_profile_likes_enabled",
-            # "hidden_profile_subscriptions_enabled",
-            # "responsive_web_graphql_exclude_directive_enabled",
-            # "verified_phone_label_enabled",
-            # "subscriptions_verification_info_is_identity_verified_enabled",
-            # "subscriptions_verification_info_verified_since_enabled",
-            # "highlights_tweets_tab_ui_enabled",
-            # "responsive_web_twitter_article_notes_tab_enabled",
-            # "creator_subscriptions_tweet_preview_api_enabled",
-            # "responsive_web_graphql_skip_user_profile_image_extensions_enabled",
-            # "responsive_web_graphql_timeline_navigation_enabled"],
-            # 
-            # fieldToggles:["withAuxiliaryUserLabels"]}}
             variables = {
                 "screen_name": id,
                 "withSafetyModeUserFields": True
             }
-            features = {
-                "hidden_profile_likes_enabled": True,
-                "hidden_profile_subscriptions_enabled": True,
-                "responsive_web_graphql_exclude_directive_enabled": True,
-                "verified_phone_label_enabled": False,
-                "subscriptions_verification_info_is_identity_verified_enabled": True,
-                "subscriptions_verification_info_verified_since_enabled": True,
-                "highlights_tweets_tab_ui_enabled": True,
-                "responsive_web_twitter_article_notes_tab_enabled": False,
-                "creator_subscriptions_tweet_preview_api_enabled": True,
-                "responsive_web_graphql_skip_user_profile_image_extensions_enabled": False,
-                "responsive_web_graphql_timeline_navigation_enabled": True
-            } #이게 자주 바뀌는 것 같다
-            field_toggles = {
-                "withAuxiliaryUserLabels": False
-            }
-
-            #variables, featrues, fieldToggles 동적으로 가져와야 할수도 있음
-            # (t/f어디서 가져오는지 생각해보기, 혹시 all true로 보내도 정상출력되는지 테스트해보기)
-
+            features = {name: True for name in featureSwitches}
+            field_toggles = {name: True for name in fieldToggles}
             payload = {
                 "variables": json.dumps(variables),
                 "features": json.dumps(features),
                 "fieldToggles": json.dumps(field_toggles)
             }
             headers = {
-                'X-Guest-Token':guest,
-                'Authorization':"Bearer "+bearer
+                'X-Guest-Token': guest,
+                'Authorization': "Bearer " + bearer,
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+                'x-twitter-active-user': 'yes',
+                'x-twitter-client-language': 'en',
+                'Referer': 'https://twitter.com/',
             }
             response = requests.get(base_url,params=payload,headers=headers)
             return response
@@ -163,6 +137,8 @@ class Twitter:
                     #변화량을 3가지 그래프 축으로 그려야됨
                     #Tweet과 Media는 같이올라가는걸 고려해야함!! 
                     #그렸다치고
+                    if upTweet > 0:
+                        notify(f'@{id}', f'New tweet (+{upTweet})')
                     prevTweet = totalTweet
                     prevMedia = totalMedia
                     prevFav = totalFav
